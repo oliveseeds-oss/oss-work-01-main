@@ -39,7 +39,7 @@ export default function Tasks({ uid, tasks, timeLogs, activeTask, isPaused, star
         onConfirm={handleDelete}
         onCancel={()=>setConfirm({open:false,id:null,name:''})}/>
 
-      {/* 🔝 CATEGORY SUMMARY (TOP) */}
+      {/* ── TOP: Category summary (4 mini panels) ── */}
       <div style={S.grid(4)}>
         {Object.entries(CATEGORIES).map(([cat])=>{
           const ct=todayTasks.filter(t=>t.category===cat)
@@ -51,34 +51,24 @@ export default function Tasks({ uid, tasks, timeLogs, activeTask, isPaused, star
               <div style={{fontSize:11,color:col,marginBottom:6,fontWeight:700}}>{cat}</div>
               <div style={{fontSize:22,fontWeight:700,color:C.text}}>{ct.length}</div>
               <div style={{fontSize:12,color:C.muted,marginTop:2}}>{done} done · {fmtDur(secs)}</div>
-              <div style={{marginTop:8,...S.progressWrap}}>
-                <div style={S.progressFill(ct.length?done/ct.length*100:0,col)}/>
-              </div>
+              <div style={{marginTop:8,...S.progressWrap}}><div style={S.progressFill(ct.length?done/ct.length*100:0,col)}/></div>
             </div>
           )
         })}
       </div>
 
-      {/* 🔲 MAIN LAYOUT 3:1 */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '3fr 1fr',
-        gap: 16,
-        alignItems: 'start',
-        marginTop: 16
-      }}>
+      {/* ── BOTTOM: 3:1 split ── */}
+      <div style={{display:'grid', gridTemplateColumns:'3fr 1fr', gap:16, alignItems:'start'}}>
 
-        {/* LEFT SIDE - TASK LIST */}
+        {/* ── LEFT (3): Task lists ── */}
         <div>
-
+          {/* Today tasks by priority */}
           {['High','Medium','Low'].map(pri => {
             const group = todayTasks.filter(t=>t.priority===pri)
             if (!group.length) return null
             return (
               <div key={pri} style={S.card}>
-                <div style={{...S.sectionTitle,color:PRI_CLR[pri]}}>
-                  ● {pri} Priority — {group.length} tasks
-                </div>
+                <div style={{...S.sectionTitle,color:PRI_CLR[pri]}}>● {pri} Priority — {group.length} tasks</div>
                 {group.map(task => {
                   const spent    = taskTime(task.id)
                   const eff      = task.planned&&spent>0 ? Math.round(task.planned*60/spent*100) : null
@@ -91,18 +81,12 @@ export default function Tasks({ uid, tasks, timeLogs, activeTask, isPaused, star
                       padding:isActive?'12px 12px 12px 10px':'10px 0 10px 3px',
                       transition:'all .15s',
                     }}>
-                      <span style={S.badge(CAT_COLOR[task.category]||C.muted)}>
-                        {task.category.replace(' Work','')}
-                      </span>
+                      <span style={S.badge(CAT_COLOR[task.category]||C.muted)}>{task.category.replace(' Work','')}</span>
                       {task.subType&&<span style={{...S.badge(C.muted),fontSize:10}}>{task.subType}</span>}
-                      <span style={{flex:1,fontSize:13,
-                        textDecoration:task.status==='Completed'?'line-through':'none',
-                        color:task.status==='Completed'?C.muted:C.text}}>
-                        {task.name}
-                      </span>
+                      <span style={{flex:1,fontSize:13,textDecoration:task.status==='Completed'?'line-through':'none',color:task.status==='Completed'?C.muted:C.text}}>{task.name}</span>
                       {spent>0&&<span style={{fontSize:11,color:C.muted}}>{fmtDur(spent)}</span>}
                       {eff&&<span style={S.badge(eff>=80?C.green:eff>=50?C.orange:C.red)}>{eff}%</span>}
-                      <span style={S.badge(task.status==='Completed'?C.green:C.muted)}>{task.status}</span>
+                      <span style={S.badge(task.status==='Completed'?C.green:task.status==='Active'?C.blue:C.muted)}>{task.status}</span>
 
                       {task.status==='Pending' && (
                         <button style={S.btn(C.green)} onClick={()=>startTask(task)}>▶ Start</button>
@@ -115,10 +99,7 @@ export default function Tasks({ uid, tasks, timeLogs, activeTask, isPaused, star
                           <button style={S.btn(C.red)} onClick={openComplete}>■ Complete</button>
                         </>
                       )}
-                      <button style={{...S.btnDanger,padding:'6px 10px'}}
-                        onClick={()=>setConfirm({open:true,id:task.id,name:task.name})}>
-                        🗑️
-                      </button>
+                      <button style={{...S.btnDanger,padding:'6px 10px'}} onClick={()=>setConfirm({open:true,id:task.id,name:task.name})}>🗑️</button>
                     </div>
                   )
                 })}
@@ -126,69 +107,66 @@ export default function Tasks({ uid, tasks, timeLogs, activeTask, isPaused, star
             )
           })}
 
+          {/* Previous tasks */}
+          {oldTasks.length>0&&(
+            <div style={S.card}>
+              <div style={S.sectionTitle}>Previous Tasks ({oldTasks.length})</div>
+              {oldTasks.slice(0,15).map(t=>(
+                <div key={t.id} style={S.row}>
+                  <span style={{fontSize:11,color:C.muted,minWidth:76}}>{t.date}</span>
+                  <span style={S.badge(CAT_COLOR[t.category]||C.muted)}>{(t.category||'').replace(' Work','')}</span>
+                  <span style={{flex:1,fontSize:13,color:C.muted}}>{t.name}</span>
+                  <span style={S.badge(t.status==='Completed'?C.green:C.muted)}>{t.status}</span>
+                  <button style={{...S.btnDanger,padding:'6px 10px'}} onClick={()=>setConfirm({open:true,id:t.id,name:t.name})}>🗑️</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* RIGHT SIDE - ADD TASK */}
-        <div style={{position:'sticky', top:10}}>
+        {/* ── RIGHT (1): Add New Task panel ── */}
+        <div style={{position:'sticky', top:16}}>
           <div style={S.card}>
             <div style={S.sectionTitle}>➕ Add New Task</div>
-
-            <div style={{display:'grid',gap:10}}>
-              <input style={S.input} placeholder="Task name"
-                value={form.name}
-                onChange={e=>setForm(p=>({...p,name:e.target.value}))}
-              />
-
-              <select style={S.select} value={form.category}
-                onChange={e=>setForm(p=>({
-                  ...p,
-                  category:e.target.value,
-                  subType:CATEGORIES[e.target.value][0]
-                }))}>
-                {Object.keys(CATEGORIES).map(c=><option key={c}>{c}</option>)}
-              </select>
-
-              <select style={S.select} value={form.subType}
-                onChange={e=>setForm(p=>({...p,subType:e.target.value}))}>
-                {(CATEGORIES[form.category]||[]).map(s=><option key={s}>{s}</option>)}
-              </select>
-
-              <select style={S.select} value={form.priority}
-                onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>
-                {['High','Medium','Low'].map(p=><option key={p}>{p}</option>)}
-              </select>
-
-              <input type="number" style={S.input} value={form.planned}
-                onChange={e=>setForm(p=>({...p,planned:+e.target.value}))}
-              />
-
-              <button style={S.btn(C.blue)} onClick={handleAdd}>
-                + Add Task
-              </button>
+            <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:12}}>
+              <div>
+                <label style={{fontSize:11,color:C.muted,display:'block',marginBottom:4}}>Task Name *</label>
+                <input style={S.input} placeholder="Describe the task..." value={form.name}
+                  onChange={e=>setForm(p=>({...p,name:e.target.value}))}
+                  onKeyDown={e=>e.key==='Enter'&&handleAdd()}/>
+              </div>
+              <div>
+                <label style={{fontSize:11,color:C.muted,display:'block',marginBottom:4}}>Category</label>
+                <select style={{...S.select,width:'100%'}} value={form.category}
+                  onChange={e=>setForm(p=>({...p,category:e.target.value,subType:CATEGORIES[e.target.value][0]}))}>
+                  {Object.keys(CATEGORIES).map(c=><option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:11,color:C.muted,display:'block',marginBottom:4}}>Sub-Type</label>
+                <select style={{...S.select,width:'100%'}} value={form.subType}
+                  onChange={e=>setForm(p=>({...p,subType:e.target.value}))}>
+                  {(CATEGORIES[form.category]||[]).map(s=><option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:11,color:C.muted,display:'block',marginBottom:4}}>Priority</label>
+                <select style={{...S.select,width:'100%'}} value={form.priority}
+                  onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>
+                  {['High','Medium','Low'].map(p=><option key={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:11,color:C.muted,display:'block',marginBottom:4}}>Planned (min)</label>
+                <input type="number" style={S.input} value={form.planned} min={1}
+                  onChange={e=>setForm(p=>({...p,planned:+e.target.value}))}/>
+              </div>
             </div>
+            <button style={{...S.btn(C.blue),width:'100%'}} onClick={handleAdd}>+ Add Task</button>
           </div>
         </div>
 
       </div>
-
-      {/* PREVIOUS TASKS */}
-      {oldTasks.length>0&&(
-        <div style={S.card}>
-          <div style={S.sectionTitle}>Previous Tasks ({oldTasks.length})</div>
-          {oldTasks.slice(0,15).map(t=>(
-            <div key={t.id} style={S.row}>
-              <span style={{fontSize:11,color:C.muted,minWidth:76}}>{t.date}</span>
-              <span style={S.badge(CAT_COLOR[t.category]||C.muted)}>{(t.category||'').replace(' Work','')}</span>
-              <span style={{flex:1,fontSize:13,color:C.muted}}>{t.name}</span>
-              <span style={S.badge(t.status==='Completed'?C.green:C.muted)}>{t.status}</span>
-              <button style={{...S.btnDanger,padding:'6px 10px'}}
-                onClick={()=>setConfirm({open:true,id:t.id,name:t.name})}>
-                🗑️
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
